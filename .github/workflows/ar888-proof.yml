@@ -1,0 +1,23 @@
+name: AR888 port reservation proof
+on:
+  push:
+    branches: [ci/ar888-port-proof-20261113]
+permissions:
+  contents: read
+jobs:
+  kernel-proof:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Record runner defaults
+        run: sysctl net.ipv4.ip_local_port_range net.ipv4.ip_local_reserved_ports
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - name: Reproduce Compose failure with an outgoing socket
+        run: python3 -u test/ar888-proof/compose.py
+      - name: Reserve test service ports
+        run: sudo sysctl -w net.ipv4.ip_local_reserved_ports=33306,54320
+      - name: Verify automatic allocation excludes reserved ports
+        run: python3 -u test/ar888-proof/reservation.py
+  changed-workflow:
+    uses: ./.github/workflows/test-all-versions.yml
+    with:
+      npm-workspace-args: -w @opentelemetry/instrumentation-pg
